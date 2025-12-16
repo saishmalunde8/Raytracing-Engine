@@ -61,23 +61,42 @@ extension and experimentation.
 
 ## Example Renders
 
-Selected renders demonstrating correctness across core features.
+## Example Renders
 
-### Cornell Box
-![Cornell Box](docs/images/Cornell_Box.png)
-
-Indirect illumination and color bleeding from an emissive area light.
-
-### Final Scene
-![Final Scene 1](docs/images/Final_Scene_1.png)
-
-Complex scene composition with multiple materials and geometry.
-
-![Final Scene 2](docs/images/Final_Scene_2.png)
-
-Additional view demonstrating depth, reflections, and global illumination.
+The following renders are selected to validate correctness across core rendering
+features and scene complexity, rather than visual styling.
 
 ---
+
+### 1. Core Path Tracing, Motion Blur & Texturing
+
+![Final Scene – Motion & Textures](docs/images/Final_Scene_1.png)
+
+Validation of recursive path tracing with diffuse, metallic, and dielectric materials,
+including textured geometry and motion blur via time-varying primitives. The scene
+demonstrates correct handling of moving objects, texture mapping, and stochastic
+sampling.
+
+---
+
+### 2. Global Illumination & Area Lighting
+
+![Cornell Box](docs/images/Cornell_Box.png)
+
+Cornell box scene illustrating indirect illumination, soft shadows, and color
+bleeding from an emissive area light source, validating global illumination behavior
+and geometric correctness.
+
+---
+
+### 3. Scene Complexity & Volumetric Rendering
+
+![Final Scene – Volumetrics](docs/images/Final_Scene_2.png)
+
+Complex scene composition incorporating bounding volume hierarchies, heterogeneous
+materials, and constant-density volumetric media. This render demonstrates
+participating media, isotropic scattering, and nested volumetric regions.
+
 
 ## Build & Run
 
