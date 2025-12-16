@@ -1,0 +1,12 @@
+# Build artifacts
+build/
+raytracer
+*.exe
+*.out
+
+# Generated renders
+*.ppm
+
+# OS / editor junk
+.DS_Store
+.vscode/
