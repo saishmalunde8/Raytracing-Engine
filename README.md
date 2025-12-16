@@ -63,7 +63,19 @@ extension and experimentation.
 
 Selected renders demonstrating correctness across core features.
 
-(Images will be added here.)
+### Cornell Box
+![Cornell Box](docs/images/Cornell_Box.png)
+
+Indirect illumination and color bleeding from an emissive area light.
+
+### Final Scene
+![Final Scene 1](docs/images/Final_Scene_1.png)
+
+Complex scene composition with multiple materials and geometry.
+
+![Final Scene 2](docs/images/Final_Scene_2.png)
+
+Additional view demonstrating depth, reflections, and global illumination.
 
 ---
 
