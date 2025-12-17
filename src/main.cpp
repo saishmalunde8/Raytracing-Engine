@@ -12,8 +12,32 @@
 void bouncing_spheres() {
     hittable_list world;
 
-    auto checker = make_shared<checker_texture>(0.32, color(.2, .3, .1), color(.9, .9, .9));
+    auto checker = make_shared<checker_texture>(0.32, color(0.15, 0.25, 0.35), color(0.85, 0.88, 0.92));
     world.add(make_shared<sphere>(point3(0,-1000,0), 1000, make_shared<lambertian>(checker)));
+
+    auto difflight = make_shared<diffuse_light>(color(1.0, 0.85, 0.6)*10);
+    world.add(make_shared<sphere>(point3(-15, 9, -15), 7, difflight));
+
+    auto star_light = make_shared<diffuse_light>(color(1.0, 1.0, 1.0) * 2.0);
+    double star_radius = 0.08;  // VERY small
+    double star_height = 30.0;  // far away
+
+    for (int i = 0; i < 60; i++) {
+
+    double theta = random_double(0, 2 * pi);
+    double phi   = random_double(0.25 * pi, 0.5 * pi); 
+    // only upper sky, not horizon
+
+    double x = star_height * sin(phi) * cos(theta);
+    double y = star_height * cos(phi);
+    double z = star_height * sin(phi) * sin(theta);
+
+    world.add(make_shared<sphere>(
+        point3(x, y, z),
+        star_radius,
+        star_light
+    ));
+}
 
     for (int a = -11; a < 11; a++) {
         for (int b = -11; b < 11; b++) {
@@ -43,11 +67,11 @@ void bouncing_spheres() {
             }
         }
     }
-
+    
     auto material1 = make_shared<dielectric>(1.5);
-    world.add(make_shared<sphere>(point3(0, 1, 0), 1.0, material1));
+    world.add(make_shared<sphere>(point3(0, 1, 0), 1, material1));
 
-    auto material2 = make_shared<lambertian>(color(0.4, 0.2, 0.1));
+    auto material2 = make_shared<lambertian>(color(0.7, 0.5, 0.1));
     world.add(make_shared<sphere>(point3(-4, 1, 0), 1.0, material2));
 
     auto material3 = make_shared<metal>(color(0.7, 0.6, 0.5), 0.0);
@@ -59,12 +83,15 @@ void bouncing_spheres() {
 
     cam.aspect_ratio      = 16.0 / 9.0;
     cam.image_width       = 1200;
-    cam.samples_per_pixel = 200;
-    cam.max_depth         = 50;
-    cam.background        = color(0.70, 0.80, 1.00);
+    cam.samples_per_pixel = 400;
+    cam.max_depth         = 80;
+    cam.background        = color(0,0,0.01);
+    // cam.background       = color(0.20, 0.25, 0.35); // cool base tone
+    cam.g_use_sky_gradient = false;
+    cam.g_sky_strength     = 0.85;
 
-    cam.vfov     = 20;
-    cam.lookfrom = point3(13,2,3);
+    cam.vfov     = 21;
+    cam.lookfrom = point3(13,2,-3);
     cam.lookat   = point3(0,0,0);
     cam.vup      = vec3(0,1,0);
 
@@ -89,6 +116,8 @@ void checkered_spheres(){
     cam.samples_per_pixel = 200;
     cam.max_depth         = 50;
     cam.background        = color(0.70, 0.80, 1.00);
+    cam.g_use_sky_gradient = false;
+    cam.g_sky_strength     = 1.0;
 
     cam.vfov     = 20;
     cam.lookfrom = point3(13,2,3);
@@ -112,6 +141,9 @@ void earth() {
     cam.samples_per_pixel = 200;
     cam.max_depth         = 50;
     cam.background        = color(0.70, 0.80, 1.00);
+    cam.g_use_sky_gradient = false;
+    cam.g_sky_strength     = 1.0;
+
 
     cam.vfov     = 20;
     cam.lookfrom = point3(0,0,11);
@@ -167,6 +199,9 @@ void sphere_noise_gallery() {
     cam.samples_per_pixel = 100;
     cam.max_depth         = 50;
     cam.background        = color(0.70, 0.80, 1.00);
+    cam.g_use_sky_gradient = false;
+    cam.g_sky_strength     = 1.0;
+
 
     cam.vfov     = 20;
     cam.lookfrom = point3(15,5,15);
@@ -206,6 +241,8 @@ void quads() {
     cam.samples_per_pixel = 100;
     cam.max_depth         = 50;
     cam.background        = color(0.70, 0.80, 1.00);
+    cam.g_use_sky_gradient = false;
+    cam.g_sky_strength     = 1.0;
 
     cam.vfov     = 80;
     cam.lookfrom = point3(0,0,9);
@@ -235,6 +272,8 @@ void simple_light() {
     cam.samples_per_pixel = 100;
     cam.max_depth         = 50;
     cam.background        = color(0,0,0);
+    cam.g_use_sky_gradient = false;
+    cam.g_sky_strength     = 1.0;
 
     cam.vfov     = 20;
     cam.lookfrom = point3(26,3,6);
@@ -278,6 +317,8 @@ void cornell_box() {
     cam.samples_per_pixel = 200;
     cam.max_depth         = 50;
     cam.background        = color(0,0,0);
+    cam.g_use_sky_gradient = false;
+    cam.g_sky_strength     = 1.0;
 
     cam.vfov     = 40;
     cam.lookfrom = point3(278, 278, -800);
@@ -322,6 +363,8 @@ void cornell_smoke() {
     cam.samples_per_pixel = 200;
     cam.max_depth         = 50;
     cam.background        = color(0,0,0);
+    cam.g_use_sky_gradient = false;
+    cam.g_sky_strength     = 1.0;
 
     cam.vfov     = 40;
     cam.lookfrom = point3(278, 278, -800);
@@ -401,6 +444,8 @@ void final_scene(int image_width, int samples_per_pixel, int max_depth) {
     cam.samples_per_pixel = samples_per_pixel;
     cam.max_depth         = max_depth;
     cam.background        = color(0,0,0);
+    cam.g_use_sky_gradient = false;
+    cam.g_sky_strength     = 1.0;
 
     cam.vfov     = 40;
     cam.lookfrom = point3(478, 278, -600);
@@ -413,7 +458,7 @@ void final_scene(int image_width, int samples_per_pixel, int max_depth) {
 }
 
 int main() {
-    switch (9) {
+    switch (1) {
         case 1: bouncing_spheres();           break;
         case 2: checkered_spheres();          break;
         case 3: earth();                      break;  
