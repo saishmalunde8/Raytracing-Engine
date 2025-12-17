@@ -102,31 +102,32 @@ participating media, isotropic scattering, and nested volumetric regions.
 
 ### Requirements
 
+```
 - C++17-compatible compiler (clang++ or g++)
 - Unix-like environment (macOS or Linux)
-
+```
 ### Build
-
+```
 clang++ -std=c++17 -Iinclude src/main.cpp -o raytracer
-
+```
 
 ### Run
-
+```
 ./raytracer > output.ppm
-
+```
 
 Note: Rendering may take significant time depending on scene complexity and sampling parameters.
 
 ---
 
 ## Repository Structure
-
+```
 src/ - Application entry point and implementation code
 include/ - Core rendering abstractions and interfaces
 assets/ - Runtime assets (e.g. textures)
 docs/ - Documentation and curated render outputs
 external/ - Third-party dependencies (stb_image)
-
+```
 
 ---
 
