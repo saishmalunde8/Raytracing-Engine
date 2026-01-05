@@ -25,6 +25,7 @@ is rendered independently into a shared framebuffer, followed by a final output 
 rendering strategies, simplifies profiling and instrumentation, and establishes a clean
 execution model that can be extended toward alternative backends such as GPU-accelerated
 or hardware-specific rendering pipelines.**
+
 ---
 
 ## Capabilities
