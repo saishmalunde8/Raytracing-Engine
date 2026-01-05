@@ -110,19 +110,25 @@ The render below was produced using identical scene configuration, camera parame
 sampling settings, and maximum ray depth. The visual output is identical across execution
 models; the difference lies entirely in how work is scheduled on the CPU.
 
-![Render Output](docs/images/Final_Scene_multithreaded.png)
+<table align="center" border="2" cellpadding="10" cellspacing="0">
+  <tr>
+    <td colspan="3" align="center">
+      <img src="docs/images/Final_Scene_1.png" alt="Render Output" width="750"/>
+    </td>
+  </tr>
 
-<table>
   <tr>
     <th align="center">Execution Model</th>
     <th align="center">CPU Configuration</th>
     <th align="center">Render Time</th>
   </tr>
+
   <tr>
     <td align="center">Single-threaded</td>
     <td align="center">1 core (Apple M1)</td>
     <td align="center"><strong>565.59 s</strong></td>
   </tr>
+
   <tr>
     <td align="center">Tile-based multithreaded</td>
     <td align="center">4 cores (Apple M1)</td>
