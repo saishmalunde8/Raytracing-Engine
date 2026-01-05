@@ -1,27 +1,33 @@
-# CPU Ray Tracing Engine (C++)
+# CPU Multithreaded Ray Tracing Engine (C++)
 
-A single-threaded, CPU-based path tracing system designed as a foundational rendering
-engine for exploring physically based light transport, acceleration structures, and
-volumetric rendering. The current implementation emphasizes correctness, clarity, and
-system architecture, serving as a base for future extensions into performance-oriented
-and hardware-accelerated rendering.
+A CPU-based, multithreaded ray tracing system designed as a foundational rendering engine
+for exploring physically based light transport, acceleration structures, volumetric
+light transport, and parallel execution on modern multi-core processors. The current
+implementation emphasizes correctness, architectural clarity, and a framebuffer-first,
+tile-based rendering pipeline, serving as a base for future extensions into
+hardware-accelerated and backend-specific rendering pipelines.
 
 ---
 
 ## System Overview
 
-This project is a CPU-based, offline ray tracing system focused on correctness and
-architectural clarity rather than real-time performance. It is designed as an
-exploration of core rendering concepts such as geometry, materials, acceleration
-structures, and volumetric light transport.
+This renderer initially used a scanline-based, single-threaded execution model,
+writing pixel results directly to the output stream. While suitable for early
+correctness validation, this approach limited scalability and made performance
+analysis and backend extensibility difficult.
 
-The current implementation does not target real-time rendering, GPU acceleration,
-or production-level performance, and instead serves as a foundation for incremental
-extension and experimentation.
+**The current architecture adopts a framebuffer-first rendering pipeline with tile-based
+work decomposition. The image is divided into fixed-size tiles, which are dynamically
+scheduled across a pool of CPU worker threads using atomic work distribution. Each tile
+is rendered independently into a shared framebuffer, followed by a final output pass.**
 
+**This structural shift improves CPU utilization, enables deterministic and progressive
+rendering strategies, simplifies profiling and instrumentation, and establishes a clean
+execution model that can be extended toward alternative backends such as GPU-accelerated
+or hardware-specific rendering pipelines.**
 ---
 
-## Capabilities (v1.0)
+## Capabilities
 
 ### Rendering
 - Recursive path tracing with configurable maximum depth
@@ -58,8 +64,6 @@ extension and experimentation.
 - Axis-aligned bounding boxes (AABB)
 
 ---
-
-## Example Renders
 
 ## Example Renders
 
@@ -143,8 +147,4 @@ coherent, extensible system that can serve as a base for further exploration.
 ## Roadmap
 
 Planned areas of exploration include:
-- Deterministic random sampling and reproducible renders
-- Multithreaded CPU rendering
-- Architectural refactoring for clearer renderer/core separation
-- Sampling improvements and variance reduction
 - Exploration of hardware-accelerated and GPU-based backends
