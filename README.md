@@ -73,7 +73,7 @@ features and scene complexity, rather than visual styling.
 
 ---
 
-### 1. Core Path Tracing, Motion Blur & Texturing
+### 1. Core Ray Tracing, Motion Blur & Texturing
 
 ![Final Scene – Motion & Textures](docs/images/Final_Scene_1.png)
 
