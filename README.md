@@ -101,6 +101,38 @@ Complex scene composition incorporating bounding volume hierarchies, heterogeneo
 materials, and constant-density volumetric media. This render demonstrates
 participating media, isotropic scattering, and nested volumetric regions.
 
+---
+
+## Execution Model Comparison
+
+The render below was produced using identical scene configuration, camera parameters,
+sampling settings, and maximum ray depth. The visual output is identical across execution
+models; the difference lies entirely in how work is scheduled on the CPU.
+
+![Render Output](docs/images/render_multithreaded.png)
+
+<table>
+  <tr>
+    <th align="center">Execution Model</th>
+    <th align="center">CPU Configuration</th>
+    <th align="center">Render Time</th>
+  </tr>
+  <tr>
+    <td align="center">Single-threaded</td>
+    <td align="center">1 core (Apple M1)</td>
+    <td align="center"><strong>240 s</strong></td>
+  </tr>
+  <tr>
+    <td align="center">Tile-based multithreaded</td>
+    <td align="center">4 cores (Apple M1)</td>
+    <td align="center"><strong>187 s</strong></td>
+  </tr>
+</table>
+
+This comparison isolates the impact of execution model and work decomposition on CPU
+utilization, independent of shading, sampling, or scene complexity.
+
+---
 
 ## Build & Run
 
