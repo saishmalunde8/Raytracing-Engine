@@ -1,3 +1,7 @@
+#include <atomic>
+#include <thread>
+#include <chrono>
+
 #ifndef CAMERA_H
 #define CAMERA_H
 
@@ -25,25 +29,110 @@ class camera {
         double defocus_angle = 0;  // Variation angle of rays through each pixel
         double focus_dist = 10;    // Distance from camera lookfrom point to plane of perfect focus
       
+        struct Tile {
+            int x0;
+            int x1;
+            int y0;
+            int y1;
+        };
+
         void render(const hittable& world) {
             initialize();
-  
-            std::cout << "P3\n" << image_width << ' ' << image_height << "\n255\n";
-  
-            for (int j = 0; j < image_height; j++) {
-                std::clog << "\rScanlines remaining: " << (image_height - j) << ' ' << std::flush;
-                for (int i = 0; i < image_width; i++) {
-                    color pixel_color(0,0,0);
-                    for (int sample = 0; sample < samples_per_pixel; sample++) {
-                        ray r = get_ray(i, j);
-                        pixel_color += ray_color(r, max_depth, world);
-                    }
-                    write_color(std::cout, pixel_samples_scale * pixel_color);
+    // ------------------------------------------------------------------------------------                  create framebuffer
+            // 1. Create framebuffer (width × height pixels)
+            std::vector<color> framebuffer(image_width * image_height);
+    // ------------------------------------------------------------------------------------                  create tiles and store them in an array
+            constexpr int TILE_SIZE = 16;
+
+            std::vector<Tile> tiles;
+    
+            // Generate tiles covering the entire image
+            for (int y = 0; y < image_height; y += TILE_SIZE) {
+                for (int x = 0; x < image_width; x += TILE_SIZE) {
+
+                    Tile tile;
+                    tile.x0 = x;
+                    tile.y0 = y;
+
+                    // Clamp tile bounds to image size
+                    tile.x1 = std::min(x + TILE_SIZE, image_width);
+                    tile.y1 = std::min(y + TILE_SIZE, image_height);
+
+                    tiles.push_back(tile);
                 }
-          }
-  
-            std::clog << "\rDone.                 \n";
+            }
+    // ------------------------------------------------------------------------------------                  create atomic counter and create worker function
+            std::atomic<size_t> next_tile_index{0};
+
+            auto worker = [&]() {
+                while (true) {
+                    size_t tile_index = next_tile_index.fetch_add(1);
+
+                    if (tile_index >= tiles.size())
+                        break;
+
+                    const Tile& tile = tiles[tile_index];
+
+                    render_region(
+                        tile.x0, tile.x1,
+                        tile.y0, tile.y1,
+                        world,
+                        framebuffer
+                    );
+                }
+            };
+    // ------------------------------------------------------------------------------------                 find out number of threads
+            unsigned int hw_threads = std::thread::hardware_concurrency();
+            if (hw_threads == 0) hw_threads = 4;
+
+            unsigned int thread_count = std::min(hw_threads, 4u);
+    // ------------------------------------------------------------------------------------                 start render clock
+            auto render_start = std::chrono::high_resolution_clock::now();
+    // ------------------------------------------------------------------------------------                 create threads array and run threads
+            std::vector<std::thread> threads;   
+            threads.reserve(thread_count);
+
+            for (unsigned int t = 0; t < thread_count; t++) {
+                threads.emplace_back(worker);
+            }
+            const size_t total_tiles = tiles.size();
+    // ------------------------------------------------------------------------------------                 start progress bar
+            while (true) {
+                size_t done = next_tile_index.load();
+                if (done >= total_tiles)
+                    break;
+
+                double percent = 100.0 * done / total_tiles;
+
+                std::clog << "\rRendering: "
+                        << static_cast<int>(percent) << "% "
+                        << std::flush;
+
+                std::this_thread::sleep_for(std::chrono::milliseconds(200));
+            }
+    // ------------------------------------------------------------------------------------                 join threads
+            for (auto& t : threads) {
+                t.join();
+            }
+    // ------------------------------------------------------------------------------------                 stop render clock
+            std::clog << "\rRendering: 100%        \n";     
+
+            auto render_end = std::chrono::high_resolution_clock::now();
+
+            std::chrono::duration<double> elapsed = render_end - render_start;
+            std::clog << "\nRender time: " << elapsed.count() << " seconds\n";
+    // ------------------------------------------------------------------------------------                  output framebuffer to image ppm
+            // 4. Output framebuffer AFTER rendering
+            std::cout << "P3\n" << image_width << ' ' << image_height << "\n255\n";
+
+            for (int j = 0; j < image_height; j++) {
+                for (int i = 0; i < image_width; i++) {
+                    int index = j * image_width + i;
+                    write_color(std::cout, framebuffer[index]);
+                }
+            }
         }
+    // ------------------------------------------------------------
   
     private:
         int    image_height;   // Rendered image height
@@ -56,7 +145,27 @@ class camera {
         vec3   defocus_disk_u;       // Defocus disk horizontal radius
         vec3   defocus_disk_v;       // Defocus disk vertical radius
 
-  
+        void render_region(
+            int x0, int x1,
+            int y0, int y1,
+            const hittable& world,
+            std::vector<color>& framebuffer) {
+            for (int j = y0; j < y1; j++) {
+                for (int i = x0; i < x1; i++) {
+
+                    color pixel_color(0,0,0);
+
+                    for (int sample = 0; sample < samples_per_pixel; sample++) {
+                        ray r = get_ray(i, j);
+                        pixel_color += ray_color(r, max_depth, world);
+                    }
+
+                    int index = j * image_width + i;
+                    framebuffer[index] = pixel_samples_scale * pixel_color;
+                }
+            }
+        }
+
         void initialize() {
             image_height = int(image_width / aspect_ratio);
             image_height = (image_height < 1) ? 1 : image_height;
