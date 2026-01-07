@@ -3,6 +3,7 @@
 
 #include "raytracer/geometry/hittable.h"
 #include "raytracer/textures/texture.h"
+#include "raytracer/core/rng.h"
 
 class material {
   public:
@@ -16,6 +17,12 @@ class material {
         const ray& r_in, const hit_record& rec, color& attenuation, ray& scattered
     ) const {
         return false;
+    }
+    virtual bool scatter(
+        const ray& r_in, const hit_record& rec, color& attenuation, ray& scattered, RNG& rng
+    ) const {
+        // Default fallback: call non-deterministic version
+        return scatter(r_in, rec, attenuation, scattered);
     }
 };
 
@@ -37,6 +44,19 @@ class lambertian : public material {
         return true;
     }
 
+    bool scatter(const ray& r_in, const hit_record& rec, color& attenuation, ray& scattered, RNG& rng) const override {
+
+      // Deterministic random unit vector
+      auto scatter_direction = rec.normal + rng.random_unit_vector();
+
+      if (scatter_direction.near_zero())
+          scatter_direction = rec.normal;
+
+      scattered = ray(rec.p, scatter_direction, r_in.time());
+      attenuation = tex->value(rec.u, rec.v, rec.p);
+      return true;
+  }
+
     private:
         shared_ptr<texture> tex;
 };
@@ -54,6 +74,18 @@ class metal : public material {
         return (dot(scattered.direction(), rec.normal) > 0);
     }
 
+    bool scatter(const ray& r_in, const hit_record& rec, color& attenuation, ray& scattered, RNG& rng)
+    const override {
+
+      vec3 reflected = reflect(r_in.direction(), rec.normal);
+
+      reflected = unit_vector(reflected) + fuzz * rng.random_unit_vector();
+
+      scattered = ray(rec.p, reflected, r_in.time());
+      attenuation = albedo;
+      return (dot(scattered.direction(), rec.normal) > 0);
+    }
+
   private:
     color albedo;
     double fuzz;
@@ -66,26 +98,50 @@ class perlin_metal : public material {
 
     bool scatter(const ray &r_in, const hit_record &rec, color &attenuation, ray &scattered) 
     const override {
-      // Sample the noise texture at the hit point
-      color nval = noise_tex->value(rec.u, rec.v, rec.p);
+        // Sample the noise texture at the hit point
+        color nval = noise_tex->value(rec.u, rec.v, rec.p);
 
-      // Convert noise to scalar in [0,1]
-      double nn = (nval.x() + nval.y() + nval.z()) / 3.0;
-      nn = interval(0.0, 1.0).clamp(nn);
+        // Convert noise to scalar in [0,1]
+        double nn = (nval.x() + nval.y() + nval.z()) / 3.0;
+        nn = interval(0.0, 1.0).clamp(nn);
 
-      // Map noise to albedo tint and fuzz (roughness)
-      // Slight tint variation around base_albedo
-      color albedo = base_albedo * (0.85 + 0.3 * nn);
+        // Map noise to albedo tint and fuzz (roughness)
+        // Slight tint variation around base_albedo
+        color albedo = base_albedo * (0.85 + 0.3 * nn);
 
-      double fuzz = min_fuzz + (max_fuzz - min_fuzz) * nn;
-      if (fuzz < 0) fuzz = 0;
-      if (fuzz > 1) fuzz = 1;
+        double fuzz = min_fuzz + (max_fuzz - min_fuzz) * nn;
+        if (fuzz < 0) fuzz = 0;
+        if (fuzz > 1) fuzz = 1;
 
-      vec3 reflected = reflect(r_in.direction(), rec.normal);
-      reflected = unit_vector(reflected) + fuzz * random_unit_vector() ;
-      scattered = ray(rec.p, reflected, r_in.time());
-      attenuation = albedo;
-      return (dot(scattered.direction(), rec.normal) > 0);
+        vec3 reflected = reflect(r_in.direction(), rec.normal);
+        reflected = unit_vector(reflected) + fuzz * random_unit_vector() ;
+        scattered = ray(rec.p, reflected, r_in.time());
+        attenuation = albedo;
+        return (dot(scattered.direction(), rec.normal) > 0);
+      }
+
+    bool scatter(const ray& r_in, const hit_record& rec, color& attenuation, ray& scattered,RNG& rng)
+    const override {
+
+        // --- identical logic up to randomness ---
+        color nval = noise_tex->value(rec.u, rec.v, rec.p);
+
+        double nn = (nval.x() + nval.y() + nval.z()) / 3.0;
+        nn = interval(0.0, 1.0).clamp(nn);
+
+        color albedo = base_albedo * (0.85 + 0.3 * nn);
+
+        double fuzz = min_fuzz + (max_fuzz - min_fuzz) * nn;
+        if (fuzz < 0) fuzz = 0;
+        if (fuzz > 1) fuzz = 1;
+
+        vec3 reflected = reflect(r_in.direction(), rec.normal);
+
+        reflected = unit_vector(reflected) + fuzz * rng.random_unit_vector();;
+
+        scattered = ray(rec.p, reflected, r_in.time());
+        attenuation = albedo;
+        return (dot(scattered.direction(), rec.normal) > 0);
     }
 
   private:
@@ -120,6 +176,29 @@ class dielectric : public material {
         scattered = ray(rec.p, direction, r_in.time());
         return true;
     }
+
+    bool scatter(const ray& r_in, const hit_record& rec, color& attenuation, ray& scattered, RNG& rng)
+    const override {
+
+      attenuation = color(1.0, 1.0, 1.0);
+      double ri = rec.front_face ? (1.0 / refraction_index) : refraction_index;
+
+      vec3 unit_direction = unit_vector(r_in.direction());
+
+      double cos_theta = std::fmin(dot(-unit_direction, rec.normal), 1.0);
+      double sin_theta = std::sqrt(1.0 - cos_theta * cos_theta);
+
+      bool cannot_refract = ri * sin_theta > 1.0;
+      vec3 direction;
+
+      if (cannot_refract || reflectance(cos_theta, ri) > rng.next_double())
+          direction = reflect(unit_direction, rec.normal);
+      else
+          direction = refract(unit_direction, rec.normal, ri);
+
+      scattered = ray(rec.p, direction, r_in.time());
+      return true;
+  }
 
   private:
     // Refractive index in vacuum or air, or the ratio of the material's refractive index over
@@ -158,6 +237,14 @@ class isotropic : public material {
         attenuation = tex->value(rec.u, rec.v, rec.p);
         return true;
     }
+
+    bool scatter(const ray& r_in, const hit_record& rec, color& attenuation, ray& scattered, RNG& rng)
+    const override {
+
+      scattered = ray(rec.p, rng.random_unit_vector(), r_in.time());
+      attenuation = tex->value(rec.u, rec.v, rec.p);
+      return true;
+  }
 
   private:
     shared_ptr<texture> tex;

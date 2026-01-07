@@ -6,13 +6,16 @@
 class perlin {
   public:
     perlin() {
+        std::mt19937 gen(1337);
+        std::uniform_real_distribution<double> dist(-1.0, 1.0);
+
         for (int i = 0; i < point_count; i++) {
-            randvec[i] = unit_vector(vec3::random(-1,1));
+            randvec[i] = unit_vector(vec3(dist(gen), dist(gen), dist(gen)));
         }
 
-        perlin_generate_perm(perm_x);
-        perlin_generate_perm(perm_y);
-        perlin_generate_perm(perm_z);
+        perlin_generate_perm(perm_x, gen);
+        perlin_generate_perm(perm_y, gen);
+        perlin_generate_perm(perm_z, gen);
     }
 
     double noise(const point3& p) const {
@@ -58,18 +61,20 @@ class perlin {
     int perm_y[point_count];
     int perm_z[point_count];
 
-    static void perlin_generate_perm(int* p) {
+    static void perlin_generate_perm(int* p, std::mt19937& gen) {
         for (int i = 0; i < point_count; i++)
             p[i] = i;
 
-        permute(p, point_count);
+        permute(p, point_count, gen);
     }
 
-    static void permute(int* p, int n) {
+    static void permute(int* p, int n, std::mt19937& gen) {
+        std::uniform_int_distribution<int> dist;
         for (int i = n-1; i > 0; i--) {
-            int target = random_int(0, i);
-            int tmp = p[i];
-            p[i] = p[target];
+            dist.param(std::uniform_int_distribution<int>::param_type(0, i));
+            int target = dist(gen);
+            int tmp = p[i]; 
+            p[i] = p[target]; 
             p[target] = tmp;
         }
     }

@@ -9,6 +9,7 @@
 #include "raytracer/materials/material.h"
 #include "raytracer/renderer/color.h"
 #include "raytracer/core/rtweekend.h"
+#include "raytracer/core/rng.h"
 
 class camera {
     public:
@@ -20,6 +21,7 @@ class camera {
         color  background = color(0.70, 0.80, 1.00); // Scene background color
         bool   g_use_sky_gradient = true;
         double g_sky_strength     = 1.0; // 0 = background only, 1 = full sky
+        bool deterministic = false;
 
         double vfov     = 90;  // Vertical view angle (field of view)
         point3 lookfrom = point3(0,0,0);   // Point camera is looking from
@@ -152,12 +154,19 @@ class camera {
             std::vector<color>& framebuffer) {
             for (int j = y0; j < y1; j++) {
                 for (int i = x0; i < x1; i++) {
-
                     color pixel_color(0,0,0);
-
                     for (int sample = 0; sample < samples_per_pixel; sample++) {
-                        ray r = get_ray(i, j);
-                        pixel_color += ray_color(r, max_depth, world);
+                        ray r;
+                        if (deterministic) {
+                            uint32_t seed = pixel_sample_seed(i, j, sample);
+                            RNG rng(seed);
+                            r = get_ray(i, j, rng);
+                            pixel_color += ray_color(r, max_depth, world, rng);
+                        } else {
+                            r = get_ray(i, j);
+                            pixel_color += ray_color(r, max_depth, world);
+                        }
+                        
                     }
 
                     int index = j * image_width + i;
@@ -205,7 +214,7 @@ class camera {
     
         ray get_ray(int i, int j) const {
             // Construct a camera ray originating from the defocus disk and directed at a randomly
-        // sampled point around the pixel location i, j.
+            // sampled point around the pixel location i, j.
     
             auto offset = sample_square();
             auto pixel_sample = pixel00_loc
@@ -218,10 +227,44 @@ class camera {
 
             return ray(ray_origin, ray_direction, ray_time);
         }
-    
+// ------------------------------------------------------------------------------------
+        ray get_ray(int i, int j, RNG& rng) const {
+            // Deterministic version using provided RNG
+
+            auto offset = sample_square(rng);
+
+            auto pixel_sample = pixel00_loc
+                            + ((i + offset.x()) * pixel_delta_u)
+                            + ((j + offset.y()) * pixel_delta_v);
+
+            point3 ray_origin;
+            if (defocus_angle <= 0) {
+                ray_origin = center;
+            } else {
+                // Deterministic defocus disk sample
+                auto r = std::sqrt(rng.next_double());
+                auto theta = 2 * pi * rng.next_double();
+                auto x = r * std::cos(theta);
+                auto y = r * std::sin(theta);
+                ray_origin = center + x * defocus_disk_u + y * defocus_disk_v;
+            }
+
+            auto ray_direction = pixel_sample - ray_origin;
+            auto ray_time = rng.next_double();
+
+            return ray(ray_origin, ray_direction, ray_time);
+        }
+// ------------------------------------------------------------------------------------
+
         vec3 sample_square() const {
             // Returns the vector to a random point in the [-.5,-.5]-[+.5,+.5] unit square.
             return vec3(random_double() - 0.5, random_double() - 0.5, 0);
+        }
+
+        vec3 sample_square(RNG& rng) const {
+            return vec3(rng.next_double() - 0.5,
+                        rng.next_double() - 0.5,
+                        0);
         }
 
         point3 defocus_disk_sample() const {
@@ -274,6 +317,46 @@ class camera {
             return (1.0 - sky_strength) * base_bg
                 + sky_strength * sky;
         }
+
+        color ray_color(const ray& r, int depth, const hittable& world, RNG& rng) const {
+            if (depth <= 0)
+                return color(0,0,0);
+
+            hit_record rec;
+            
+            if (world.hit(r, interval(0.001, infinity), rec)) {
+
+                ray scattered;
+                color attenuation;
+
+                color color_from_emission =
+                    rec.mat->emitted(rec.u, rec.v, rec.p);
+
+                if (!rec.mat->scatter(r, rec, attenuation, scattered, rng))
+                    return color_from_emission;
+
+                return color_from_emission
+                    + attenuation * ray_color(scattered, depth - 1, world, rng);
+            }
+
+            // ---------- MISS (background + gradient sky) ----------
+
+            color base_bg = background;
+
+            if (!g_use_sky_gradient)
+                return base_bg;
+
+            vec3 unit_direction = unit_vector(r.direction());
+            double t = interval(0.0, 1.0).clamp(0.35 * (unit_direction.y() + 1.0));
+
+            color horizon = color(1.00, 0.68, 0.45);
+            color zenith  = color(0.45, 0.55, 0.75);
+
+            color sky = (1.0 - t) * horizon + t * zenith;
+
+            return sky;
+        }
+
 // --------------------------
             // if (world.hit(r, interval(0.001, infinity), rec)) {
             //     ray scattered;

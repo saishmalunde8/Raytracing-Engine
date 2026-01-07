@@ -37,7 +37,19 @@ class constant_medium : public hittable {
 
         auto ray_length = r.direction().length();
         auto distance_inside_boundary = (rec2.t - rec1.t) * ray_length;
-        auto hit_distance = neg_inv_density * std::log(random_double());
+
+        // deterministic RNG derived from the ray
+        uint32_t seed = 0;
+        seed ^= static_cast<uint32_t>(r.origin().x() * 73856093);
+        seed ^= static_cast<uint32_t>(r.origin().y() * 19349663);
+        seed ^= static_cast<uint32_t>(r.origin().z() * 83492791);
+        seed ^= static_cast<uint32_t>(r.direction().x() * 2654435761);
+        seed ^= static_cast<uint32_t>(r.direction().y() * 1597334677);
+        seed ^= static_cast<uint32_t>(r.direction().z() * 3812015801);
+
+        RNG rng(seed);
+
+        auto hit_distance = neg_inv_density * std::log(rng.next_double());
 
         if (hit_distance > distance_inside_boundary)
             return false;

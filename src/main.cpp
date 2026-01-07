@@ -24,20 +24,20 @@ void bouncing_spheres() {
 
     for (int i = 0; i < 60; i++) {
 
-    double theta = random_double(0, 2 * pi);
-    double phi   = random_double(0.25 * pi, 0.5 * pi); 
-    // only upper sky, not horizon
+        double theta = random_double(0, 2 * pi);
+        double phi   = random_double(0.25 * pi, 0.5 * pi); 
+        // only upper sky, not horizon
 
-    double x = star_height * sin(phi) * cos(theta);
-    double y = star_height * cos(phi);
-    double z = star_height * sin(phi) * sin(theta);
+        double x = star_height * sin(phi) * cos(theta);
+        double y = star_height * cos(phi);
+        double z = star_height * sin(phi) * sin(theta);
 
-    world.add(make_shared<sphere>(
-        point3(x, y, z),
-        star_radius,
-        star_light
-    ));
-}
+        world.add(make_shared<sphere>(
+            point3(x, y, z),
+            star_radius,
+            star_light
+        ));
+    }
 
     for (int a = -11; a < 11; a++) {
         for (int b = -11; b < 11; b++) {
@@ -82,13 +82,14 @@ void bouncing_spheres() {
     camera cam;
 
     cam.aspect_ratio      = 16.0 / 9.0;
-    cam.image_width       = 1200;
-    cam.samples_per_pixel = 400;
-    cam.max_depth         = 80;
+    cam.image_width       = 700;
+    cam.samples_per_pixel = 50;
+    cam.max_depth         = 10;
     cam.background        = color(0,0,0.01);
     // cam.background       = color(0.20, 0.25, 0.35); // cool base tone
     cam.g_use_sky_gradient = false;
     cam.g_sky_strength     = 0.85;
+    cam.deterministic = true;
 
     cam.vfov     = 21;
     cam.lookfrom = point3(13,2,-3);
@@ -195,12 +196,13 @@ void sphere_noise_gallery() {
 
     camera cam;
     cam.aspect_ratio      = 16.0 / 9.0;
-    cam.image_width       = 400;
-    cam.samples_per_pixel = 100;
-    cam.max_depth         = 50;
+    cam.image_width       = 700;
+    cam.samples_per_pixel = 50;
+    cam.max_depth         = 10;
     cam.background        = color(0.70, 0.80, 1.00);
     cam.g_use_sky_gradient = false;
     cam.g_sky_strength     = 1.0;
+    cam.deterministic = true;
 
 
     cam.vfov     = 20;
@@ -458,7 +460,7 @@ void final_scene(int image_width, int samples_per_pixel, int max_depth) {
 }
 
 int main() {
-    switch (1) {
+    switch (4) {
         case 1: bouncing_spheres();           break;
         case 2: checkered_spheres();          break;
         case 3: earth();                      break;  
