@@ -116,13 +116,24 @@ class camera {
             for (auto& t : threads) {
                 t.join();
             }
-    // ------------------------------------------------------------------------------------                 stop render clock
+    // ------------------------------------------------------------------------------------                 stop render clock and add render benchmark
             std::clog << "\rRendering: 100%        \n";     
 
             auto render_end = std::chrono::high_resolution_clock::now();
 
-            std::chrono::duration<double> elapsed = render_end - render_start;
-            std::clog << "\nRender time: " << elapsed.count() << " seconds\n";
+            auto elapsed = std::chrono::duration<double>(render_end - render_start).count();
+
+            double total_samples = double(image_width) * double(image_height) * double(samples_per_pixel);
+
+            double samples_per_second = total_samples / elapsed;
+
+            std::clog << "\n=== Render Benchmark ===\n";
+            std::clog << "Resolution: " << image_width << " x " << image_height << "\n";
+            std::clog << "Samples per pixel: " << samples_per_pixel << "\n";
+            std::clog << "Total samples: " << total_samples << "\n";
+            std::clog << "Threads: " << thread_count << "\n";
+            std::clog << "Render time: " << elapsed << " seconds\n";
+            std::clog << "Samples/sec: " << samples_per_second << "\n";
     // ------------------------------------------------------------------------------------                  output framebuffer to image ppm
             // 4. Output framebuffer AFTER rendering
             std::cout << "P3\n" << image_width << ' ' << image_height << "\n255\n";

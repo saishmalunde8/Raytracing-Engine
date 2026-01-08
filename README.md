@@ -28,12 +28,25 @@ or hardware-specific rendering pipelines.**
 
 ---
 
+## Determinism
+
+The renderer supports a deterministic execution mode in which identical inputs produce bitwise-identical output, independent of thread count or scheduling order, enabling debugging, benchmarking, and GPU parity.
+
+Determinism is achieved through:
+- Explicit per-pixel, per-sample RNG seeding
+- Elimination of global randomness during rendering
+- Deterministic motion blur time sampling and volumetric scattering
+- Thread-safe, order-independent accumulation
+
+---
+
 ## Capabilities
 
 ### Rendering
 - Recursive path tracing with configurable maximum depth
 - Monte Carlo sampling with multiple samples per pixel
 - Gamma-correct output
+- Deterministic and non-deterministic execution modes
 
 ### Geometry
 - Static and moving spheres
@@ -186,4 +199,7 @@ coherent, extensible system that can serve as a base for further exploration.
 ## Roadmap
 
 Planned areas of exploration include:
+- Progressive rendering
+- Performance profiling and optimization
+- Tile scheduling strategies and cache behavior analysis
 - Exploration of hardware-accelerated and GPU-based backends
