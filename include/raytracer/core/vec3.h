@@ -119,13 +119,11 @@ inline vec3 random_in_unit_disk() {
 }
 
 inline vec3 random_unit_vector() {
-    while (true) {
-        auto p = vec3::random(-1, 1);        // Step 1: random cube point
-        auto lensq = p.length_squared();     // Step 2: compute x²+y²+z²
-        if (1e-160 < lensq && lensq <= 1)    // Step 3: accept if inside sphere & not too small
-            return p / sqrt(lensq);          // Step 4: normalize to make it length 1
-    }    
-}
+    auto a = random_double() * 2 * 3.1415926535897932385;
+    auto z = random_double() * 2.0 - 1.0;
+    auto r = std::sqrt(1 - z*z);
+    return vec3(r*std::cos(a), r*std::sin(a), z);
+    }
     
 inline vec3 random_on_hemisphere(const vec3& normal) {
     vec3 on_unit_sphere = random_unit_vector();
