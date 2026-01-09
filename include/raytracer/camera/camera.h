@@ -97,8 +97,9 @@ class camera {
             for (unsigned int t = 0; t < thread_count; t++) {
                 threads.emplace_back(worker);
             }
-            const size_t total_tiles = tiles.size();
     // ------------------------------------------------------------------------------------                 start progress bar
+            const size_t total_tiles = tiles.size();
+    
             while (true) {
                 size_t done = next_tile_index.load();
                 if (done >= total_tiles)
